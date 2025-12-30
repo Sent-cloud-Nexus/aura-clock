@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Settings, X, Check, Maximize, Minimize, Plus, Globe } from 'lucide-react';
 
 interface Theme {
-  background: string;
+
   cardBackground: string;
   textColor: string;
 }
