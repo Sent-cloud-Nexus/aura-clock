@@ -153,7 +153,7 @@ const ClockApp: React.FC = () => {
 
   const applyPreset = (preset: Theme & { name: string }) => {
     setTheme({
-      background: preset.background,
+
       cardBackground: preset.cardBackground,
       textColor: preset.textColor,
     });
