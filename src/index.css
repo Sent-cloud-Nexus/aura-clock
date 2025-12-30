@@ -6,38 +6,39 @@
 
 @layer base {
   :root {
-    --background: 0 0% 10%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 100%;
+    --card: 231 54% 56%;
+    --card-foreground: 17 47% 86%;
 
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 231 54% 56%;
+    --primary-foreground: 17 47% 86%;
 
-    --secondary: 0 0% 20%;
+    --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 70%;
 
     --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 64%;
+    --muted-foreground: 17 30% 75%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 17 47% 86%;
+    --accent-foreground: 231 54% 56%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 217 91% 60%;
+    --ring: 231 54% 56%;
 
-    --radius: 0.75rem;
+    --radius: 2rem;
 
     /* Clock specific tokens */
-    --clock-glow: 217 91% 60%;
+    --clock-card: 231 54% 56%;
+    --clock-text: 17 47% 86%;
     --glass-bg: 0 0% 100% / 0.05;
     --glass-border: 0 0% 100% / 0.1;
   }
@@ -50,13 +51,13 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Barlow Condensed', 'Inter', system-ui, sans-serif;
   }
 }
 
 @layer utilities {
-  .font-mono-clock {
-    font-family: 'JetBrains Mono', monospace;
+  .font-clock {
+    font-family: 'Barlow Condensed', sans-serif;
     font-variant-numeric: tabular-nums;
   }
 
@@ -64,10 +65,6 @@
     @apply backdrop-blur-md border;
     background: hsl(var(--glass-bg));
     border-color: hsl(var(--glass-border));
-  }
-
-  .glow-text {
-    text-shadow: 0 0 40px hsl(var(--clock-glow) / 0.4);
   }
 }
 
@@ -90,6 +87,12 @@
   .color-picker::-moz-color-swatch {
     border: 2px solid hsl(var(--border));
     border-radius: 9999px;
+  }
+
+  .clock-card {
+    background: hsl(var(--clock-card));
+    color: hsl(var(--clock-text));
+    border-radius: var(--radius);
   }
 }
 

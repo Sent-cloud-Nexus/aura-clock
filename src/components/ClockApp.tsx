@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Settings, MapPin, RefreshCw, X, Check, Maximize, Minimize, Plus, Trash2, Globe } from 'lucide-react';
+import { Settings, X, Check, Maximize, Minimize, Plus, Globe } from 'lucide-react';
 
 interface Theme {
   background: string;
-  clockText: string;
-  dateText: string;
-  accent: string;
+  cardBackground: string;
+  textColor: string;
 }
 
 interface WorldClock {
@@ -15,11 +14,11 @@ interface WorldClock {
 }
 
 const presets: (Theme & { name: string })[] = [
-  { name: 'Midnight', background: '#0f172a', clockText: '#f8fafc', dateText: '#94a3b8', accent: '#38bdf8' },
-  { name: 'Sunset', background: '#451a03', clockText: '#fef3c7', dateText: '#d6d3d1', accent: '#f59e0b' },
-  { name: 'Forest', background: '#052e16', clockText: '#dcfce7', dateText: '#86efac', accent: '#22c55e' },
-  { name: 'Cotton Candy', background: '#fdf2f8', clockText: '#db2777', dateText: '#f472b6', accent: '#ec4899' },
-  { name: 'Matrix', background: '#000000', clockText: '#00ff00', dateText: '#008f00', accent: '#00ff00' },
+  { name: 'Ocean', background: '#000000', cardBackground: '#5b6abf', textColor: '#e8d5d0' },
+  { name: 'Midnight', background: '#0a0a0a', cardBackground: '#1e293b', textColor: '#e2e8f0' },
+  { name: 'Forest', background: '#000000', cardBackground: '#166534', textColor: '#bbf7d0' },
+  { name: 'Sunset', background: '#0c0a09', cardBackground: '#b45309', textColor: '#fef3c7' },
+  { name: 'Berry', background: '#0f0f0f', cardBackground: '#7c3aed', textColor: '#e9d5ff' },
 ];
 
 const popularTimezones = [
@@ -39,21 +38,16 @@ const popularTimezones = [
 
 const ClockApp: React.FC = () => {
   const [time, setTime] = useState(new Date());
-  const [locationName, setLocationName] = useState('Detecting Location...');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [worldClocks, setWorldClocks] = useState<WorldClock[]>([
-    { id: '1', timezone: 'Europe/London', label: 'London' },
-    { id: '2', timezone: 'Asia/Tokyo', label: 'Tokyo' },
-  ]);
+  const [worldClocks, setWorldClocks] = useState<WorldClock[]>([]);
   const [isAddingClock, setIsAddingClock] = useState(false);
   
   const [theme, setTheme] = useState<Theme>({
-    background: '#1a1a1a',
-    clockText: '#ffffff',
-    dateText: '#a3a3a3',
-    accent: '#3b82f6',
+    background: '#000000',
+    cardBackground: '#5b6abf',
+    textColor: '#e8d5d0',
   });
 
   useEffect(() => {
@@ -61,10 +55,6 @@ const ClockApp: React.FC = () => {
       setTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    fetchLocation();
   }, []);
 
   // Hide controls after inactivity in fullscreen mode
@@ -117,61 +107,44 @@ const ClockApp: React.FC = () => {
     }
   }, []);
 
-  const fetchLocation = () => {
-    setLocationName('Locating...');
-    if (!navigator.geolocation) {
-      setLocationName('Location not supported');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const response = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-          );
-          const data = await response.json();
-          const city = data.city || data.locality || data.principalSubdivision || 'Unknown Location';
-          const country = data.countryCode || '';
-          setLocationName(`${city}, ${country}`);
-        } catch {
-          const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-          setLocationName(timeZone.replace('_', ' '));
-        }
-      },
-      () => {
-        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        setLocationName(timeZone.replace('_', ' '));
-      }
-    );
+  // Format seconds with leading zero
+  const getSeconds = (): string => {
+    return time.getSeconds().toString().padStart(2, '0');
   };
 
-  const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  // Format time as HH:MM
+  const getTime = (): string => {
+    const hours = time.getHours().toString().padStart(2, '0');
+    const minutes = time.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  // Get AM/PM
+  const getPeriod = (): string => {
+    return time.getHours() >= 12 ? 'PM' : 'AM';
+  };
+
+  // Format date as YYYY-MM-DD
+  const getDate = (): string => {
+    const year = time.getFullYear();
+    const month = (time.getMonth() + 1).toString().padStart(2, '0');
+    const day = time.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Get day abbreviation
+  const getDay = (): string => {
+    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    return days[time.getDay()];
   };
 
   const formatTimeForTimezone = (timezone: string): string => {
     return time.toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: true,
+      hour12: false,
       timeZone: timezone 
     });
-  };
-
-  const getTimezoneOffset = (timezone: string): string => {
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      timeZoneName: 'shortOffset'
-    });
-    const parts = formatter.formatToParts(time);
-    const offsetPart = parts.find(p => p.type === 'timeZoneName');
-    return offsetPart?.value || '';
   };
 
   const handleColorChange = (key: keyof Theme, value: string) => {
@@ -181,9 +154,8 @@ const ClockApp: React.FC = () => {
   const applyPreset = (preset: Theme & { name: string }) => {
     setTheme({
       background: preset.background,
-      clockText: preset.clockText,
-      dateText: preset.dateText,
-      accent: preset.accent
+      cardBackground: preset.cardBackground,
+      textColor: preset.textColor,
     });
   };
 
@@ -207,164 +179,134 @@ const ClockApp: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen w-full flex flex-col items-center justify-center transition-colors duration-500 relative overflow-hidden"
+      className="min-h-screen w-full flex flex-col items-center justify-center transition-colors duration-500 relative overflow-hidden p-4 md:p-8"
       style={{ backgroundColor: theme.background }}
     >
-      {/* Background Decorative Glow */}
+      {/* Main Clock Card */}
       <div 
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vw] rounded-full pointer-events-none blur-3xl animate-pulse-glow"
-        style={{ background: `radial-gradient(circle, ${theme.accent} 0%, transparent 70%)` }}
-      />
-
-      {/* Main Clock Container */}
-      <div className="z-10 flex flex-col items-center text-center p-8 w-full max-w-4xl">
-        
-        {/* Location Badge */}
-        <button 
-          className={`flex items-center gap-2 mb-8 px-4 py-2 rounded-full glass shadow-lg cursor-pointer hover:bg-white/10 transition-all group ${
-            !showControls ? 'opacity-0' : 'opacity-100'
-          }`}
-          onClick={fetchLocation}
-          title="Refresh Location"
-        >
-          <MapPin size={16} style={{ color: theme.accent }} />
-          <span 
-            className="text-sm font-medium tracking-wide uppercase"
-            style={{ color: theme.dateText }}
-          >
-            {locationName}
-          </span>
-          <RefreshCw 
-            size={14} 
-            className="opacity-50 group-hover:opacity-100 transition-opacity" 
-            style={{ color: theme.dateText }} 
-          />
-        </button>
-
-        {/* Time Display */}
-        <h1 
-          className="text-7xl md:text-9xl font-bold tracking-tighter mb-4 font-mono-clock transition-colors duration-300"
+        className="relative w-full max-w-md aspect-[9/16] md:aspect-[3/4] rounded-[2rem] md:rounded-[3rem] flex flex-col items-center justify-center p-8 transition-all duration-500 shadow-2xl"
+        style={{ backgroundColor: theme.cardBackground }}
+      >
+        {/* Giant Seconds Display */}
+        <div 
+          className="font-clock font-semibold leading-none tracking-tight transition-colors duration-300"
           style={{ 
-            color: theme.clockText, 
-            textShadow: `0 0 40px ${theme.accent}40, 0 0 80px ${theme.accent}20` 
+            color: theme.textColor,
+            fontSize: 'clamp(180px, 45vw, 280px)',
           }}
         >
-          {formatTime(time)}
-        </h1>
+          {getSeconds()}
+        </div>
 
-        {/* Date Display */}
-        <h2 
-          className="text-xl md:text-3xl font-light tracking-wide transition-colors duration-300 mb-8"
-          style={{ color: theme.dateText }}
+        {/* Time Display */}
+        <div 
+          className="font-clock text-5xl md:text-6xl font-light tracking-wider mt-4 transition-colors duration-300"
+          style={{ color: theme.textColor }}
         >
-          {formatDate(time)}
-        </h2>
+          {getTime()}
+        </div>
 
-        {/* World Clocks */}
-        {worldClocks.length > 0 && (
-          <div className={`flex flex-wrap justify-center gap-4 mt-4 transition-opacity duration-300 ${
-            !showControls ? 'opacity-60' : 'opacity-100'
-          }`}>
-            {worldClocks.map((clock) => (
-              <div 
-                key={clock.id}
-                className="group relative glass rounded-xl px-5 py-3 flex flex-col items-center min-w-[140px] transition-all hover:scale-105"
-              >
-                <button
-                  onClick={() => removeWorldClock(clock.id)}
-                  className={`absolute -top-2 -right-2 p-1 rounded-full bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 ${
-                    !showControls ? 'pointer-events-none' : ''
-                  }`}
-                >
-                  <X size={12} color="#fff" />
-                </button>
-                <span 
-                  className="text-xs font-medium uppercase tracking-wider mb-1"
-                  style={{ color: theme.dateText }}
-                >
-                  {clock.label}
-                </span>
-                <span 
-                  className="text-2xl font-bold font-mono-clock"
-                  style={{ color: theme.clockText }}
-                >
-                  {formatTimeForTimezone(clock.timezone)}
-                </span>
-                <span 
-                  className="text-xs opacity-60"
-                  style={{ color: theme.dateText }}
-                >
-                  {getTimezoneOffset(clock.timezone)}
-                </span>
-              </div>
-            ))}
-            
-            {/* Add Clock Button */}
-            {availableTimezones.length > 0 && (
-              <button
-                onClick={() => setIsAddingClock(true)}
-                className={`glass rounded-xl px-5 py-3 flex flex-col items-center justify-center min-w-[140px] transition-all hover:scale-105 hover:bg-white/10 ${
-                  !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                }`}
-                style={{ borderStyle: 'dashed' }}
-              >
-                <Plus size={24} style={{ color: theme.accent }} />
-                <span 
-                  className="text-xs font-medium uppercase tracking-wider mt-1"
-                  style={{ color: theme.dateText }}
-                >
-                  Add City
-                </span>
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Initial Add Clock Button when empty */}
-        {worldClocks.length === 0 && (
-          <button
-            onClick={() => setIsAddingClock(true)}
-            className={`mt-4 glass rounded-xl px-6 py-4 flex items-center gap-3 transition-all hover:scale-105 hover:bg-white/10 ${
-              !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
-          >
-            <Globe size={20} style={{ color: theme.accent }} />
-            <span 
-              className="text-sm font-medium"
-              style={{ color: theme.dateText }}
-            >
-              Add World Clock
-            </span>
-          </button>
-        )}
+        {/* Date Row */}
+        <div 
+          className="font-clock text-xl md:text-2xl font-light tracking-widest mt-4 flex items-center gap-4 opacity-80 transition-colors duration-300"
+          style={{ color: theme.textColor }}
+        >
+          <span>{getPeriod()}</span>
+          <span>{getDate()}</span>
+          <span>{getDay()}</span>
+        </div>
       </div>
 
+      {/* World Clocks Row */}
+      {worldClocks.length > 0 && (
+        <div className={`flex flex-wrap justify-center gap-3 mt-6 transition-opacity duration-300 ${
+          !showControls ? 'opacity-40' : 'opacity-100'
+        }`}>
+          {worldClocks.map((clock) => (
+            <div 
+              key={clock.id}
+              className="group relative rounded-xl px-4 py-2 flex flex-col items-center transition-all hover:scale-105"
+              style={{ 
+                backgroundColor: theme.cardBackground + '40',
+                color: theme.textColor 
+              }}
+            >
+              <button
+                onClick={() => removeWorldClock(clock.id)}
+                className={`absolute -top-2 -right-2 p-1 rounded-full bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 ${
+                  !showControls ? 'pointer-events-none' : ''
+                }`}
+              >
+                <X size={10} color="#fff" />
+              </button>
+              <span className="text-xs font-medium uppercase tracking-wider opacity-70">
+                {clock.label}
+              </span>
+              <span className="text-xl font-clock font-semibold">
+                {formatTimeForTimezone(clock.timezone)}
+              </span>
+            </div>
+          ))}
+          
+          {availableTimezones.length > 0 && (
+            <button
+              onClick={() => setIsAddingClock(true)}
+              className={`rounded-xl px-4 py-2 flex flex-col items-center justify-center transition-all hover:scale-105 border-2 border-dashed ${
+                !showControls ? 'opacity-0 pointer-events-none' : 'opacity-60 hover:opacity-100'
+              }`}
+              style={{ borderColor: theme.textColor + '40', color: theme.textColor }}
+            >
+              <Plus size={18} />
+              <span className="text-xs font-medium uppercase tracking-wider mt-1">Add</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Control Buttons */}
-      <div className={`absolute bottom-8 right-8 flex gap-3 transition-opacity duration-300 ${
+      <div className={`absolute bottom-6 right-6 flex gap-3 transition-opacity duration-300 ${
         !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}>
+        {/* Add World Clock Button (when empty) */}
+        {worldClocks.length === 0 && (
+          <button 
+            onClick={() => setIsAddingClock(true)}
+            className="p-3 rounded-full transition-all hover:scale-105 active:scale-95"
+            style={{ 
+              backgroundColor: theme.cardBackground + '60',
+              color: theme.textColor 
+            }}
+            title="Add World Clock"
+          >
+            <Globe size={20} />
+          </button>
+        )}
+
         {/* Fullscreen Button */}
         <button 
           onClick={toggleFullscreen}
-          className="p-4 rounded-full glass shadow-lg transition-all hover:scale-105 active:scale-95 group"
+          className="p-3 rounded-full transition-all hover:scale-105 active:scale-95"
+          style={{ 
+            backgroundColor: theme.cardBackground + '60',
+            color: theme.textColor 
+          }}
           title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
         >
-          {isFullscreen ? (
-            <Minimize size={24} style={{ color: theme.clockText }} />
-          ) : (
-            <Maximize size={24} style={{ color: theme.clockText }} />
-          )}
+          {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
         </button>
 
         {/* Settings Button */}
         <button 
           onClick={() => setIsSettingsOpen(true)}
-          className="p-4 rounded-full glass shadow-lg transition-all hover:scale-105 active:scale-95 group"
+          className="p-3 rounded-full transition-all hover:scale-105 active:scale-95 group"
+          style={{ 
+            backgroundColor: theme.cardBackground + '60',
+            color: theme.textColor 
+          }}
         >
           <Settings 
-            size={24} 
+            size={20} 
             className="transition-transform duration-700 group-hover:rotate-180" 
-            style={{ color: theme.clockText }} 
           />
         </button>
       </div>
@@ -372,8 +314,8 @@ const ClockApp: React.FC = () => {
       {/* Fullscreen hint */}
       {isFullscreen && showControls && (
         <div 
-          className="absolute bottom-8 left-8 text-xs opacity-50 transition-opacity duration-300"
-          style={{ color: theme.dateText }}
+          className="absolute bottom-6 left-6 text-xs opacity-40 transition-opacity duration-300"
+          style={{ color: theme.textColor }}
         >
           Move mouse to show controls • ESC to exit
         </div>
@@ -383,29 +325,21 @@ const ClockApp: React.FC = () => {
       {isAddingClock && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setIsAddingClock(false)}
           />
           
           <div 
-            className="relative w-full max-w-sm rounded-2xl shadow-2xl p-6 overflow-hidden border-2 animate-fade-in"
-            style={{ 
-              backgroundColor: theme.background === '#fdf2f8' || theme.background === '#ffffff' ? '#ffffff' : '#1e1e1e',
-              borderColor: theme.accent 
-            }}
+            className="relative w-full max-w-sm rounded-2xl shadow-2xl p-6 overflow-hidden animate-fade-in"
+            style={{ backgroundColor: '#1a1a1a' }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 
-                className="text-lg font-bold"
-                style={{ color: theme.background === '#fdf2f8' || theme.background === '#ffffff' ? '#000' : '#fff' }}
-              >
-                Add World Clock
-              </h3>
+              <h3 className="text-lg font-semibold text-white">Add World Clock</h3>
               <button 
                 onClick={() => setIsAddingClock(false)}
-                className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
               >
-                <X size={20} style={{ color: theme.dateText }} />
+                <X size={20} className="text-white/60" />
               </button>
             </div>
 
@@ -414,12 +348,10 @@ const ClockApp: React.FC = () => {
                 <button
                   key={tz.timezone}
                   onClick={() => addWorldClock(tz.timezone, tz.label)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg bg-black/5 hover:bg-black/10 transition-colors"
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
                 >
-                  <span className="font-medium" style={{ color: theme.dateText }}>
-                    {tz.label}
-                  </span>
-                  <span className="text-sm opacity-60" style={{ color: theme.dateText }}>
+                  <span className="font-medium text-white/80">{tz.label}</span>
+                  <span className="text-sm text-white/50 font-clock">
                     {formatTimeForTimezone(tz.timezone)}
                   </span>
                 </button>
@@ -433,39 +365,28 @@ const ClockApp: React.FC = () => {
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setIsSettingsOpen(false)}
           />
           
           <div 
-            className="relative w-full max-w-md rounded-2xl shadow-2xl p-6 overflow-hidden border-2 animate-fade-in"
-            style={{ 
-              backgroundColor: theme.background === '#fdf2f8' || theme.background === '#ffffff' ? '#ffffff' : '#1e1e1e',
-              borderColor: theme.accent 
-            }}
+            className="relative w-full max-w-md rounded-2xl shadow-2xl p-6 overflow-hidden animate-fade-in"
+            style={{ backgroundColor: '#1a1a1a' }}
           >
             {/* Modal Header */}
             <div className="flex justify-between items-center mb-6">
-              <h3 
-                className="text-xl font-bold"
-                style={{ color: theme.background === '#fdf2f8' || theme.background === '#ffffff' ? '#000' : '#fff' }}
-              >
-                Appearance
-              </h3>
+              <h3 className="text-xl font-semibold text-white">Appearance</h3>
               <button 
                 onClick={() => setIsSettingsOpen(false)}
-                className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                className="p-2 rounded-full hover:bg-white/10 transition-colors"
               >
-                <X size={20} style={{ color: theme.dateText }} />
+                <X size={20} className="text-white/60" />
               </button>
             </div>
 
             {/* Presets */}
             <div className="mb-6">
-              <label 
-                className="text-xs font-semibold uppercase tracking-wider mb-3 block opacity-70"
-                style={{ color: theme.dateText }}
-              >
+              <label className="text-xs font-semibold uppercase tracking-wider mb-3 block text-white/50">
                 Presets
               </label>
               <div className="grid grid-cols-5 gap-2">
@@ -473,20 +394,16 @@ const ClockApp: React.FC = () => {
                   <button
                     key={preset.name}
                     onClick={() => applyPreset(preset)}
-                    className="group relative w-full aspect-square rounded-lg border-2 transition-all hover:scale-105"
+                    className="group relative w-full aspect-square rounded-xl border-2 transition-all hover:scale-105 overflow-hidden"
                     style={{ 
-                      backgroundColor: preset.background,
-                      borderColor: theme.background === preset.background ? theme.accent : 'transparent' 
+                      backgroundColor: preset.cardBackground,
+                      borderColor: theme.cardBackground === preset.cardBackground ? preset.textColor : 'transparent' 
                     }}
                     title={preset.name}
                   >
-                    <div 
-                      className="absolute inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" 
-                      style={{ backgroundColor: preset.accent }}
-                    />
-                    {theme.background === preset.background && (
+                    {theme.cardBackground === preset.cardBackground && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <Check size={16} color={preset.clockText} />
+                        <Check size={16} style={{ color: preset.textColor }} />
                       </div>
                     )}
                   </button>
@@ -496,10 +413,7 @@ const ClockApp: React.FC = () => {
 
             {/* Custom Colors */}
             <div className="space-y-3">
-              <label 
-                className="text-xs font-semibold uppercase tracking-wider mb-2 block opacity-70"
-                style={{ color: theme.dateText }}
-              >
+              <label className="text-xs font-semibold uppercase tracking-wider mb-2 block text-white/50">
                 Custom Colors
               </label>
               
@@ -507,19 +421,16 @@ const ClockApp: React.FC = () => {
                 label="Background" 
                 value={theme.background} 
                 onChange={(v) => handleColorChange('background', v)}
-                textColor={theme.dateText}
+              />
+              <ColorPicker 
+                label="Card Color" 
+                value={theme.cardBackground} 
+                onChange={(v) => handleColorChange('cardBackground', v)}
               />
               <ColorPicker 
                 label="Text Color" 
-                value={theme.clockText} 
-                onChange={(v) => handleColorChange('clockText', v)}
-                textColor={theme.dateText}
-              />
-              <ColorPicker 
-                label="Accent Glow" 
-                value={theme.accent} 
-                onChange={(v) => handleColorChange('accent', v)}
-                textColor={theme.dateText}
+                value={theme.textColor} 
+                onChange={(v) => handleColorChange('textColor', v)}
               />
             </div>
           </div>
@@ -533,19 +444,13 @@ interface ColorPickerProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  textColor: string;
 }
 
-const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, textColor }) => (
-  <div className="flex items-center justify-between p-3 rounded-lg bg-black/5">
-    <span className="text-sm font-medium" style={{ color: textColor }}>{label}</span>
+const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange }) => (
+  <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+    <span className="text-sm font-medium text-white/70">{label}</span>
     <div className="flex items-center gap-2">
-      <span 
-        className="text-xs font-mono opacity-50 uppercase"
-        style={{ color: textColor }}
-      >
-        {value}
-      </span>
+      <span className="text-xs font-mono text-white/40 uppercase">{value}</span>
       <input 
         type="color" 
         value={value}
