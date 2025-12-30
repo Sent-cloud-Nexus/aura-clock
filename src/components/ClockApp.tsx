@@ -14,11 +14,11 @@ interface WorldClock {
 }
 
 const presets: (Theme & { name: string })[] = [
-  { name: 'Ocean', background: '#000000', cardBackground: '#5b6abf', textColor: '#e8d5d0' },
-  { name: 'Midnight', background: '#0a0a0a', cardBackground: '#1e293b', textColor: '#e2e8f0' },
-  { name: 'Forest', background: '#000000', cardBackground: '#166534', textColor: '#bbf7d0' },
-  { name: 'Sunset', background: '#0c0a09', cardBackground: '#b45309', textColor: '#fef3c7' },
-  { name: 'Berry', background: '#0f0f0f', cardBackground: '#7c3aed', textColor: '#e9d5ff' },
+  { name: 'Ocean', background: 'transparent', cardBackground: '#5b6abf', textColor: '#e8d5d0' },
+  { name: 'Midnight', background: 'transparent', cardBackground: '#1e293b', textColor: '#e2e8f0' },
+  { name: 'Forest', background: 'transparent', cardBackground: '#166534', textColor: '#bbf7d0' },
+  { name: 'Sunset', background: 'transparent', cardBackground: '#b45309', textColor: '#fef3c7' },
+  { name: 'Berry', background: 'transparent', cardBackground: '#7c3aed', textColor: '#e9d5ff' },
 ];
 
 const popularTimezones = [
@@ -45,7 +45,7 @@ const ClockApp: React.FC = () => {
   const [isAddingClock, setIsAddingClock] = useState(false);
   
   const [theme, setTheme] = useState<Theme>({
-    background: '#000000',
+    background: 'transparent',
     cardBackground: '#5b6abf',
     textColor: '#e8d5d0',
   });
